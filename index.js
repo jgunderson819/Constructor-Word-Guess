@@ -1,121 +1,162 @@
-const wordGuess = function(array){ 
-    const Word = require('./Word');
-    const inquirer = require('inquirer');
-    const chalk = require('chalk');
-    const log = console.log;
-    
-    let wordBank = array;
-    
-    let remainingGuesses;
-    let correctGuesses;
-    let allGuesses;
-    let remainingLetters;
-    let currentWord;
-    const invalidResponse = /[^a-z]/;
-    
-    function checkRound() {
-        if (remainingLetters === 0) {
-            for (let e = 0; e < correctGuesses.length; e++) {
-                currentWord.checkLetter(correctGuesses[e]);
-            };
-            log("");
-            currentWord.returnString();
-            log("")
-            wordBank.splice(wordBank.indexOf(currentWord.guessWord), 1);
-            log(chalk.green.bold("\nWINNER! WINNER! WINNER! \nYou guessed the word!\n"));
-            if (wordBank.length === 0) {
-                return endGame();
-            }
-            startGame();
-        } else if (remainingGuesses === 0) {
-            log(chalk.red("\nToo many incorrect guesses ") + chalk.red.bold.inverse("GAME OVER!\n"));
-            startGame();
+var Word = require("./word.js");
+var inquirer = require("inquirer");
+
+// letters entry
+var letterArray = "abcdefghijklmnopqrstuvwxyz";
+
+// List of words to choose from
+var rockBands = [
+  "the eagles",
+  "the beatles",
+  "ac/dc",
+  "james taylor",
+  "john denver",
+  "the who",
+  "guess who",
+  "three dog night",
+  "the doors",
+  "america",
+  "crosby, stills, nash, & young",
+  "neil young",
+  "neil diamond",
+  
+];
+
+// Pick Random index from UnitedStates array
+var randomIndex = Math.floor(Math.random() * rockBands.length);
+var randomWord = rockBands[randomIndex];
+
+// Pass random word through Word constructor
+var computerWord = new Word(randomWord);
+
+var requireNewWord = false;
+
+// Array for guessed letters
+var incorrectLetters = [];
+var correctLetters = [];
+
+// Guesses left
+var guessesLeft = 10;
+
+function theLogic() {
+  // Generates new word for Word constructor if true
+  if (requireNewWord) {
+    // Selects random UnitedStates array
+    var randomIndex = Math.floor(Math.random() * rockBands.length);
+    var randomWord = rockBands[randomIndex];
+
+    // Passes random word through the Word constructor
+    computerWord = new Word(randomWord);
+
+    requireNewWord = false;
+  }
+
+  // TestS if a letter guessed is correct
+  var wordComplete = [];
+  computerWord.objArray.forEach(completeCheck);
+
+  // letters remaining to be guessed
+  if (wordComplete.includes(false)) {
+    inquirer
+      .prompt([
+        {
+          type: "input",
+          message: "Guess a letter between A-Z!",
+          name: "userinput"
+        }
+      ])
+      .then(function(input) {
+        if (
+          !letterArray.includes(input.userinput) ||
+          input.userinput.length > 1
+        ) {
+          console.log("\nPlease try again!\n");
+          theLogic();
         } else {
-            playRound();
-        }
-    };
-    
-    function startGame() {
-        inquirer.prompt([
-            {
-                name: "start",
-                type: "list",
-                message: "What would you like to do?",
-                choices: ["New Game", "Exit"]
+          if (
+            incorrectLetters.includes(input.userinput) ||
+            correctLetters.includes(input.userinput) ||
+            input.userinput === ""
+          ) {
+            console.log("\nAlready Guessed or Nothing Entered\n");
+            theLogic();
+          } else {
+            // Checks if guess is correct
+            var wordCheckArray = [];
+
+            computerWord.userGuess(input.userinput);
+
+            // Checks if guess is correct
+            computerWord.objArray.forEach(wordCheck);
+            if (wordCheckArray.join("") === wordComplete.join("")) {
+              console.log("\nIncorrect\n");
+
+              incorrectLetters.push(input.userinput);
+              guessesLeft--;
+            } else {
+              console.log("\nCorrect!\n");
+
+              correctLetters.push(input.userinput);
             }
-        ])
-            .then(answers => {
-                if (answers.start === "New Game") {
-                    newRound();
-                } else {
-                    process.exit();
-                }
-            });
-    };
-    
-    function newRound() {
-        currentWord = new Word(wordBank[Math.floor(Math.random() * wordBank.length)]);
-        remainingGuesses = 10;
-        correctGuesses = [];
-        allGuesses = [];
-        remainingLetters = currentWord.guessWord.length;
-        playRound();
-    };
-    
-    function playRound() {
-        if (correctGuesses.length > 0) {
-            for (let q = 0; q < correctGuesses.length; q++) {
-                currentWord.checkLetter(correctGuesses[q]);
-            };
+
+            computerWord.log();
+
+            // Print guesses left
+            console.log("Guesses Left: " + guessesLeft + "\n");
+
+            // Print letters guessed already
+            console.log(
+              "Letters Guessed: " + incorrectLetters.join(" ") + "\n"
+            );
+
+            // Guesses left
+            if (guessesLeft > 0) {
+              // Call function
+              theLogic();
+            } else {
+              console.log("Sorry, you lose!\n");
+
+              restartGame();
+            }
+
+            function wordCheck(key) {
+              wordCheckArray.push(key.guessed);
+            }
+          }
         }
-        log("")
-        currentWord.returnString();
-        log("")
-        inquirer
-            .prompt([
-                {
-                    name: "q1",
-                    type: "input",
-                    message: "Choose a letter",
-                    validate: function (input) {
-                        if (input.length > 0 && input.length < 2 && !input.match(invalidResponse)) {
-                            return true;
-                        } else {
-                            log (chalk.yellow(" is not a valid response. Please enter one lower case letter"))
-                        }
-                    }
-                }
-            ])
-            .then(answers => {
-                if (!allGuesses.includes(answers.q1)) {
-                    if (currentWord.guessWord.includes(answers.q1)) {
-                        correctGuesses.push(answers.q1);
-                        log(chalk.green("\nCorrect!", answers.q1, "is used to spell this word!\n"));
-                        for (let n = 0; n < currentWord.guessWord.length; n++) {
-                            if (answers.q1 === currentWord.guessWord[n]) {
-                                remainingLetters--;
-                            };
-                        };
-                    } else {
-                        remainingGuesses--;
-                        if (remainingGuesses > 0) {
-                            log(chalk.red("\nIncorrect guess!", answers.q1, "is not used to spell this word. Try again! Remaining Guesses:", remainingGuesses));
-                        }
-                    }
-                    allGuesses.push(answers.q1);
-                } else {
-                    log(chalk.blue("\nYou already guessed that letter. Guess another letter.\n"));
-                }
-                checkRound();
-            });
-    };
-    
-    function endGame() {
-        log(chalk.green.bold.inverse("\nCongratulations! You have correcly guessed all the words!\n"))
-    }
-    
-    log(chalk.blueBright.bold("\n Welcome to Word Guess!\n"));
-    startGame();
-    } 
-    module.exports=wordGuess;
-  © 2020 GitHub, Inc.
+      });
+  } else {
+    console.log("YOU WIN!\n");
+
+    restartGame();
+  }
+
+  function completeCheck(key) {
+    wordComplete.push(key.guessed);
+  }
+}
+
+function restartGame() {
+  inquirer
+    .prompt([
+      {
+        type: "list",
+        message: "Would you like to:",
+        choices: ["Play Again", "Exit"],
+        name: "restart"
+      }
+    ])
+    .then(function(input) {
+      if (input.restart === "Play Again") {
+        requireNewWord = true;
+        incorrectLetters = [];
+        correctLetters = [];
+        guessesLeft = 10;
+        theLogic();
+      } else {
+        return;
+      }
+    });
+}
+
+theLogic();

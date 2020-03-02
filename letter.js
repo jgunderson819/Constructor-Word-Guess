@@ -1,24 +1,26 @@
-// constructor for letters
-let Letter = function (string) {
-    this.string = string;
-    this.boolean = false;
-};
-
-Letter.prototype.guessed = function () {
-    if (this.boolean === true){
-        return this.string;
-    } else {
-        return "_";
-    }
-};
-
-Letter.prototype.takeCharacter = function(character) {
-    if (character === this.string){
-        this.boolean = true;
-    }
-}
-
-module.exports = Letter;
-
-
   
+function Letter(value) {
+    this.letter = value;
+    this.guessed = false;
+  
+    this.toString = function() {
+      if (this.letter === " ") {
+        this.guessed = true;
+        return " ";
+      } else {
+        if (this.guessed === false) {
+          return "_";
+        } else {
+          return this.letter;
+        }
+      }
+    };
+  
+    this.guess = function(guess) {
+      if (guess === this.letter) {
+        this.guessed = true;
+      }
+    };
+  }
+  
+  module.exports = Letter;
